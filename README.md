@@ -398,5 +398,5 @@ For issues, questions, or suggestions:
 
 ---
 
-**Built with ❤️ for the AI community**
+**Design & Developed by Code Insights @pramodklal for the AI community**
 
