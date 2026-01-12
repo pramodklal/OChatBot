@@ -5,8 +5,7 @@ from PyPDF2 import PdfReader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 import streamlit as st
-from langchain.chains.question_answering import load_qa_chain
-from langchain_core.prompts import PromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 from dotenv import load_dotenv
 from langchain_community.vectorstores import FAISS
 from docx import Document
@@ -83,23 +82,11 @@ def get_vector_store(chunks):
                 raise e
 
 def get_conversational_chain(modelname):
-    prompt_template = """
-    Answer the question as detailed as possible from the provided context, make sure to provide all the details, if the answer is not in
-    provided context just say, "answer is not available in the context", don't provide the wrong answer\n\n
-    Context:\n {context}?\n
-    Question: \n{question}\n
-
-    Answer:
-    """
-
     model = ChatOpenAI(
         model=modelname,
         temperature=0.3,
     )
-    prompt = PromptTemplate(template=prompt_template,
-                            input_variables=["context", "question"])
-    chain = load_qa_chain(llm=model, chain_type="stuff", prompt=prompt)
-    return chain
+    return model
 
 def clear_chat_history():
     st.session_state.messages = [
@@ -116,10 +103,24 @@ def user_input(user_question,modelname):
         try:
             new_db = FAISS.load_local("faiss_index", embeddings, allow_dangerous_deserialization=True) 
             docs = new_db.similarity_search(user_question)
-            chain = get_conversational_chain(modelname)
+            llm = get_conversational_chain(modelname)
             
-            response = chain(
-                {"input_documents": docs, "question": user_question}, return_only_outputs=True, )
+            # Combine context from retrieved documents
+            context = "\n\n".join([doc.page_content for doc in docs])
+            
+            # Create prompt with context and question
+            prompt = f"""Answer the question as detailed as possible from the provided context, make sure to provide all the details, if the answer is not in provided context just say, "answer is not available in the context", don't provide the wrong answer.
+
+Context:
+{context}
+
+Question: {user_question}
+
+Answer:"""
+            
+            # Get response from LLM
+            response_text = llm.invoke(prompt).content
+            response = {"output_text": response_text}
 
             print(response)
             return response
