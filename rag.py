@@ -5,7 +5,7 @@ from PyPDF2 import PdfReader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 import streamlit as st
-from langchain.chains import load_qa_chain
+from langchain.chains.question_answering import load_qa_chain
 from langchain_core.prompts import PromptTemplate
 from dotenv import load_dotenv
 from langchain_community.vectorstores import FAISS
